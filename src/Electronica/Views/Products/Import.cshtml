@@ -1,0 +1,82 @@
+@model ImportViewModel
+@{
+    ViewData["Title"] = "Импорт товаров";
+    var result = Model.Result;
+}
+
+<section class="page-head">
+    <div>
+        <h1>Импорт товаров из CSV</h1>
+        <p class="muted">Укажите путь к файлу: абсолютный (<code>C:\data\products.csv</code>) или относительно wwwroot.</p>
+    </div>
+</section>
+
+<section class="card">
+    <form method="post" asp-controller="Products" asp-action="Import" class="import-form">
+        <label for="filePath">Путь к CSV-файлу</label>
+        <div class="input-row">
+            <input type="text" id="filePath" name="filePath" value="@Model.FilePath"
+                   placeholder="/csv/sample_products.csv" autocomplete="off" autofocus />
+            <button type="submit" class="btn btn-primary">Импортировать товары</button>
+        </div>
+        <div class="hint">
+            Пример:
+            <button type="button" class="chip" onclick="document.getElementById('filePath').value='/csv/sample_products.csv'">/csv/sample_products.csv</button>
+        </div>
+    </form>
+</section>
+
+@if (result != null)
+{
+    var hasErrors = result.ErrorCount > 0;
+    var hasImported = result.ImportedCount > 0;
+
+    <section class="card">
+        <h2>Результат импорта</h2>
+
+        @if (!hasErrors)
+        {
+            <div class="alert alert-success">Импорт выполнен успешно: ошибок нет.</div>
+        }
+        else if (hasImported)
+        {
+            <div class="alert alert-warning">Импорт выполнен частично: часть строк пропущена из-за ошибок.</div>
+        }
+        else
+        {
+            <div class="alert alert-danger">Ни один товар не импортирован. Исправьте ошибки и повторите импорт.</div>
+        }
+
+        <table class="table summary">
+            <thead><tr><th>Показатель</th><th class="num">Значение</th></tr></thead>
+            <tbody>
+                <tr><td>Всего строк</td><td class="num"><span class="pill pill-neutral">@result.TotalRows</span></td></tr>
+                <tr><td>Успешно импортировано</td><td class="num"><span class="pill pill-success">@result.ImportedCount</span></td></tr>
+                <tr><td>Ошибки</td><td class="num"><span class="pill @(hasErrors ? "pill-danger" : "pill-neutral")">@result.ErrorCount</span></td></tr>
+            </tbody>
+        </table>
+
+        @if (hasErrors)
+        {
+            <h3>Список ошибок</h3>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th class="narrow">Строка</th><th>Описание ошибки</th></tr></thead>
+                    <tbody>
+                        @foreach (var error in result.Errors)
+                        {
+                            <tr>
+                                <td>@(error.RowNumber > 0 ? error.RowNumber.ToString() : "файл")</td>
+                                <td class="error-cell">@error.Message</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <div class="actions">
+            <a asp-action="Index" class="btn btn-success">Перейти к списку товаров</a>
+        </div>
+    </section>
+}

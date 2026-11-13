@@ -1,0 +1,117 @@
+@model ProductsIndexViewModel
+@{
+    ViewData["Title"] = "Список товаров";
+}
+
+<section class="page-head">
+    <div>
+        <h1>Товары</h1>
+        <p class="muted">Каталог из CSV, хранится в памяти приложения.</p>
+    </div>
+    <div class="head-actions">
+        <a asp-action="Import" class="btn btn-primary">Импортировать товары</a>
+        @if (Model.AllProductsCount > 0)
+        {
+            <form method="post" asp-action="Clear" onsubmit="return confirm('Удалить все товары из памяти?');">
+                <button type="submit" class="btn btn-ghost">Очистить список</button>
+            </form>
+        }
+    </div>
+</section>
+
+<section class="stats">
+    <div class="stat">
+        <span class="stat-label">Всего товаров</span>
+        <span class="stat-value">@Model.TotalCount</span>
+        @if (Model.IsFiltered)
+        {
+            <span class="stat-note">из @Model.AllProductsCount</span>
+        }
+    </div>
+    <div class="stat">
+        <span class="stat-label">Общая стоимость</span>
+        <span class="stat-value">@MoneyFormat.WithCurrency(Model.TotalValue, "RUB")</span>
+    </div>
+    <div class="stat">
+        <span class="stat-label">Стоимость остатков</span>
+        <span class="stat-value">@MoneyFormat.WithCurrency(Model.StockValue, "RUB")</span>
+    </div>
+</section>
+
+@if (Model.AllProductsCount == 0)
+{
+    <div class="empty">
+        <div class="empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></div>
+        <h2>Товары еще не импортированы.</h2>
+        <p class="muted">Загрузите CSV-файл, и товары появятся в этой таблице.</p>
+        <a asp-action="Import" class="btn btn-primary">Перейти к импорту</a>
+    </div>
+}
+else
+{
+    <form method="get" asp-action="Index" class="toolbar card">
+        <input type="search" name="q" value="@Model.Query" placeholder="Поиск: название, артикул, бренд…" />
+        <select name="category">
+            <option value="">Все категории</option>
+            @foreach (var c in Model.Categories)
+            {
+                <option value="@c" selected="@(c == Model.Category)">@c</option>
+            }
+        </select>
+        <select name="sort">
+            <option value="" selected="@(Model.Sort == "")">Порядок импорта</option>
+            <option value="name" selected="@(Model.Sort == "name")">По названию</option>
+            <option value="price_asc" selected="@(Model.Sort == "price_asc")">Цена ↑</option>
+            <option value="price_desc" selected="@(Model.Sort == "price_desc")">Цена ↓</option>
+            <option value="stock_desc" selected="@(Model.Sort == "stock_desc")">Остаток ↓</option>
+        </select>
+        <button type="submit" class="btn btn-primary">Применить</button>
+        <a asp-action="Index" class="btn btn-ghost">Сбросить</a>
+    </form>
+
+    @if (Model.Products.Count == 0)
+    {
+        <div class="alert alert-warning">По вашему запросу ничего не найдено.</div>
+    }
+    else
+    {
+        <div class="table-wrap">
+            <table class="table products">
+                <thead>
+                    <tr>
+                        <th>Артикул</th><th>Название</th><th>Описание</th><th class="num">Цена</th><th>Валюта</th>
+                        <th>Категория</th><th class="num">Остаток</th><th>Активен</th><th>Бренд</th>
+                        <th class="num">Гарантия, мес.</th><th>Модель</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var product in Model.Products)
+                    {
+                        <tr>
+                            <td class="mono">@product.Sku</td>
+                            <td class="name">@product.Name</td>
+                            <td class="desc">@product.Description</td>
+                            <td class="num">@MoneyFormat.Amount(product.Price)</td>
+                            <td>@product.Currency</td>
+                            <td><span class="tag">@product.CategoryName</span></td>
+                            <td class="num @(product.StockQuantity == 0 ? "stock-zero" : "")">@product.StockQuantity</td>
+                            <td>
+                                @if (product.IsActive)
+                                {
+                                    <span class="pill pill-success">Да</span>
+                                }
+                                else
+                                {
+                                    <span class="pill pill-neutral">Нет</span>
+                                }
+                            </td>
+                            <td><b>@product.Brand</b></td>
+                            <td class="num">@product.WarrantyMonths</td>
+                            <td class="mono">@product.ModelNumber</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
